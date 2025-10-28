@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+.DS_Store
+dist/
+build/
+coverage/
+
+# Firebase Service Account Keys (NEVER COMMIT!)
+config/serviceAccountKey.json
+config/*-firebase-adminsdk-*.json
+serviceAccountKey.json
