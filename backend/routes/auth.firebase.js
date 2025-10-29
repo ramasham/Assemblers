@@ -20,6 +20,7 @@ router.post('/login', async (req, res) => {
     const user = await User.verifyPassword(email, password);
 
     if (!user) {
+      console.error(`❌ Login failed for ${email} - Invalid credentials or missing passwordHash`);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'

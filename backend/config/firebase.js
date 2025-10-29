@@ -64,6 +64,8 @@ const initializeFirebase = () => {
       console.error('  1. GOOGLE_APPLICATION_CREDENTIALS (path to service account file)');
       console.error('  2. FIREBASE_SERVICE_ACCOUNT (JSON string)');
       console.error('  3. FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL');
+      console.error('\n💡 Quick fix: Create backend/.env with:');
+      console.error('   GOOGLE_APPLICATION_CREDENTIALS=./config/serviceAccountKey.json');
       throw new Error('Firebase credentials not configured');
     }
   } catch (error) {
