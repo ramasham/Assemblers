@@ -97,18 +97,6 @@ export function LoginForm() {
               "Sign In"
             )}
           </Button>
-
-          <div className="mt-4 p-3 bg-muted rounded-md text-sm">
-            <p className="font-semibold mb-2">Demo Credentials:</p>
-            <ul className="space-y-1 text-muted-foreground">
-              <li>• worker@company.com (Multi-role Technician)</li>
-              <li>• supervisor@company.com (Supervisor)</li>
-              <li>• planner@company.com (Engineer Planner)</li>
-              <li className="mt-2">
-                Password: <span className="font-mono">demo123</span>
-              </li>
-            </ul>
-          </div>
         </form>
       </CardContent>
     </Card>
