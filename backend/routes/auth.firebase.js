@@ -125,21 +125,20 @@ router.post('/switch-role', async (req, res) => {
 
     // Validate role switching - prevent privilege escalation
     if (role && !department) {
-      // Technicians cannot become supervisors or planners
-      if (user.mainRole === 'technician' && 
-          (role.includes('Supervisor') || role.includes('Planner'))) {
+      // Check if role is in user's allowedRoles
+      if (!user.allowedRoles || !user.allowedRoles.includes(role)) {
         return res.status(403).json({
           success: false,
-          message: 'Technicians cannot switch to supervisor or planner roles'
+          message: `You are not allowed to switch to ${role}. Allowed roles: ${user.allowedRoles?.join(', ')}`
         });
       }
 
-      // Supervisors cannot become planners or technicians
-      if (user.mainRole === 'supervisor' && 
-          (role.includes('Planner') || role.includes('Technician'))) {
+      // Prevent privilege escalation - technicians and supervisors cannot become planners
+      if ((user.mainRole === 'technician' || user.mainRole === 'supervisor') && 
+          role.includes('Planner')) {
         return res.status(403).json({
           success: false,
-          message: 'Supervisors cannot switch to planner or technician roles'
+          message: 'Cannot switch to planner role'
         });
       }
 

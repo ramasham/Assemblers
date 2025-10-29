@@ -1,10 +1,4 @@
 {
-  "/calendar/page": "app/calendar/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/job-orders/page": "app/job-orders/page.js",
-  "/page": "app/page.js",
-  "/performance/page": "app/performance/page.js",
-  "/reports/page": "app/reports/page.js",
-  "/submit-work/page": "app/submit-work/page.js",
-  "/technician-tasks/page": "app/technician-tasks/page.js"
+  "/page": "app/page.js"
 }
