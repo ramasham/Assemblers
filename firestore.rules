@@ -1,0 +1,190 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to get user data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Helper function to check if user has access to a department
+    function hasDepartmentAccess(dept) {
+      return getUserData().departments.hasAny([dept]);
+    }
+    
+    // Helper function to check main role
+    function hasMainRole(role) {
+      return getUserData().mainRole == role;
+    }
+    
+    // Helper function to check permission
+    function hasPermission(permission) {
+      return getUserData().permissions[permission] == true;
+    }
+
+    // ========================================
+    // USERS COLLECTION
+    // ========================================
+    match /users/{userId} {
+      // Users can only read their own profile
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can update their own profile (limited fields)
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['mainRole', 'permissions', 'allowedRoles', 'departments']);
+      
+      // Only admins can create or delete users (implement admin check if needed)
+      allow create, delete: if false;
+    }
+
+    // ========================================
+    // TASKS COLLECTION
+    // ========================================
+    match /tasks/{taskId} {
+      // Read: User must have access to task's department
+      allow read: if request.auth != null 
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Create: Only supervisors and planners can create tasks
+      allow create: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'))
+        && hasDepartmentAccess(request.resource.data.department);
+      
+      // Update: Technicians can update their own tasks, supervisors can update any
+      allow update: if request.auth != null 
+        && (
+          (hasMainRole('technician') 
+            && resource.data.assignedTo == request.auth.uid
+            && hasDepartmentAccess(resource.data.department))
+          || hasMainRole('supervisor')
+          || hasMainRole('planner')
+        );
+      
+      // Delete: Only supervisors and planners can delete tasks
+      allow delete: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'));
+    }
+
+    // ========================================
+    // JOB ORDERS COLLECTION
+    // ========================================
+    match /jobOrders/{orderId} {
+      // Read: User must have department access
+      allow read: if request.auth != null 
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Create: Only planners can create job orders
+      allow create: if request.auth != null 
+        && hasMainRole('planner')
+        && hasPermission('canCreateJobOrders');
+      
+      // Update: Supervisors and planners can update
+      allow update: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'))
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Delete: Only planners can delete job orders
+      allow delete: if request.auth != null 
+        && hasMainRole('planner')
+        && hasPermission('canCreateJobOrders');
+    }
+
+    // ========================================
+    // OPERATIONS COLLECTION
+    // ========================================
+    match /operations/{operationId} {
+      // Read: User must have department access
+      allow read: if request.auth != null 
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Create/Update: Only supervisors and planners
+      allow create, update: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'))
+        && hasPermission('canAssign');
+      
+      // Delete: Only planners
+      allow delete: if request.auth != null 
+        && hasMainRole('planner');
+    }
+
+    // ========================================
+    // ALERTS COLLECTION
+    // ========================================
+    match /alerts/{alertId} {
+      // Read: User must have department access
+      allow read: if request.auth != null 
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Create: Anyone can create alerts for their departments
+      allow create: if request.auth != null 
+        && hasDepartmentAccess(request.resource.data.department);
+      
+      // Update: Only supervisors and planners can update alerts
+      allow update: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'));
+      
+      // Delete: Only supervisors and planners
+      allow delete: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'));
+    }
+
+    // ========================================
+    // TECHNICIANS COLLECTION
+    // ========================================
+    match /technicians/{technicianId} {
+      // Read: Anyone authenticated can read technicians in their departments
+      allow read: if request.auth != null 
+        && hasDepartmentAccess(resource.data.department);
+      
+      // Create/Update: Only supervisors and planners
+      allow create, update: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'));
+      
+      // Delete: Only planners
+      allow delete: if request.auth != null 
+        && hasMainRole('planner');
+    }
+
+    // ========================================
+    // AUDIT LOGS COLLECTION
+    // ========================================
+    match /auditLogs/{logId} {
+      // Read: Only supervisors and planners with report permission
+      allow read: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'))
+        && hasPermission('canViewReports');
+      
+      // Create: Anyone can create audit logs (system-generated)
+      allow create: if request.auth != null;
+      
+      // Update/Delete: No one can modify audit logs
+      allow update, delete: if false;
+    }
+
+    // ========================================
+    // PERFORMANCE METRICS COLLECTION
+    // ========================================
+    match /performanceMetrics/{metricId} {
+      // Read: Users with report viewing permission
+      allow read: if request.auth != null 
+        && hasPermission('canViewReports');
+      
+      // Create/Update: Only supervisors and planners
+      allow create, update: if request.auth != null 
+        && (hasMainRole('supervisor') || hasMainRole('planner'));
+      
+      // Delete: Only planners
+      allow delete: if request.auth != null 
+        && hasMainRole('planner');
+    }
+
+    // ========================================
+    // DEFAULT DENY ALL
+    // ========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

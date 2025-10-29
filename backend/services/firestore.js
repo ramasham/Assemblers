@@ -19,6 +19,7 @@ export const collections = {
   roles: db.collection('roles'),
   userAllowedRoles: db.collection('userAllowedRoles'),
   devices: db.collection('devices'),
+  operations: db.collection('operations'),
   performanceMetrics: db.collection('performanceMetrics'),
   auditLogs: db.collection('auditLogs'),
   sessions: db.collection('sessions')

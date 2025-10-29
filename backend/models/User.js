@@ -58,6 +58,26 @@ const User = {
       }
     }
 
+    // Determine mainRole from currentRole or data
+    let mainRole = data.mainRole || 'technician';
+    if (data.currentRole) {
+      if (data.currentRole.includes('Planner')) mainRole = 'planner';
+      else if (data.currentRole.includes('Supervisor')) mainRole = 'supervisor';
+      else mainRole = 'technician';
+    }
+
+    // Setup departments array
+    const departments = data.departments || [data.department || 'Production'];
+    const activeDepartment = data.activeDepartment || departments[0];
+
+    // Setup permissions based on mainRole
+    const permissions = data.permissions || {
+      canApprove: mainRole !== 'technician',
+      canAssign: mainRole !== 'technician',
+      canViewReports: true,
+      canCreateJobOrders: mainRole === 'planner'
+    };
+
     const userData = {
       employeeId: data.employeeId.trim(),
       name: data.name.trim(),
@@ -65,9 +85,18 @@ const User = {
       passwordHash,
       firebaseUid,
       phoneNumber: data.phoneNumber?.trim() || '',
+      
+      // New role switching fields
+      mainRole,
+      departments,
+      activeDepartment,
+      permissions,
+      
+      // Legacy fields (for backward compatibility)
       currentRole: data.currentRole || null,
-      department: data.department || 'production',
+      department: data.department || activeDepartment,
       allowedRoles: data.allowedRoles || [],
+      
       isActive: data.isActive !== undefined ? data.isActive : true,
       profileImage: data.profileImage || '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -221,23 +250,48 @@ const User = {
   },
 
   /**
-   * Switch user role
+   * Switch user role or department
    */
-  async switchRole(userId, newRoleId) {
+  async switchRole(userId, newRoleId, options = {}) {
     const user = await this.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Check if user is allowed to switch to this role
-    if (!user.allowedRoles.includes(newRoleId)) {
-      throw new Error('User is not allowed to switch to this role');
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Handle department switching for multi-department users
+    if (options.department) {
+      // Check if user has access to this department
+      if (!user.departments || !user.departments.includes(options.department)) {
+        throw new Error('User does not have access to this department');
+      }
+      
+      updateData.activeDepartment = options.department;
+      updateData.department = options.department; // Update legacy field too
+      
+      // Update currentRole to match department
+      if (user.mainRole === 'technician') {
+        updateData.currentRole = `${options.department} Technician`;
+      } else if (user.mainRole === 'supervisor') {
+        updateData.currentRole = `${options.department} Supervisor`;
+      }
+    } 
+    // Handle role switching (legacy behavior)
+    else if (newRoleId) {
+      // Check if user is allowed to switch to this role
+      if (!user.allowedRoles.includes(newRoleId)) {
+        throw new Error('User is not allowed to switch to this role');
+      }
+
+      updateData.currentRole = newRoleId;
+    } else {
+      throw new Error('Either newRoleId or options.department must be provided');
     }
 
-    await usersCollection.doc(userId).update({
-      currentRole: newRoleId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    await usersCollection.doc(userId).update(updateData);
 
     return await this.findById(userId);
   },

@@ -32,8 +32,10 @@ router.post('/login', async (req, res) => {
       {
         uid: user.uid || user.id,
         email: user.email,
+        mainRole: user.mainRole,
         currentRole: user.currentRole,
-        department: user.department
+        department: user.activeDepartment || user.department,
+        activeDepartment: user.activeDepartment
       },
       process.env.JWT_SECRET || 'your-secret-key-change-in-production',
       { expiresIn: '7d' }
@@ -48,10 +50,14 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         employeeId: user.employeeId,
+        mainRole: user.mainRole,
         currentRole: user.currentRole,
         allowedRoles: user.allowedRoles,
-        department: user.department,
-        phoneNumber: user.phoneNumber
+        department: user.activeDepartment || user.department,
+        departments: user.departments,
+        activeDepartment: user.activeDepartment,
+        phoneNumber: user.phoneNumber,
+        permissions: user.permissions
       }
     });
   } catch (error) {
@@ -67,7 +73,7 @@ router.post('/login', async (req, res) => {
 // Switch role endpoint
 router.post('/switch-role', async (req, res) => {
   try {
-    const { role } = req.body;
+    const { role, department } = req.body;
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -92,23 +98,79 @@ router.post('/switch-role', async (req, res) => {
       });
     }
 
-    // Switch role using email instead of uid
-    const updatedUser = await User.switchRole(user.id, role);
+    // Validate department switching for technicians
+    if (department) {
+      // Only technicians with multiple departments can switch departments
+      if (user.mainRole !== 'technician') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only technicians can switch departments'
+        });
+      }
+
+      if (!user.departments || user.departments.length < 2) {
+        return res.status(403).json({
+          success: false,
+          message: 'User does not have multiple departments'
+        });
+      }
+
+      if (!user.departments.includes(department)) {
+        return res.status(403).json({
+          success: false,
+          message: 'User does not have access to this department'
+        });
+      }
+    }
+
+    // Validate role switching - prevent privilege escalation
+    if (role && !department) {
+      // Technicians cannot become supervisors or planners
+      if (user.mainRole === 'technician' && 
+          (role.includes('Supervisor') || role.includes('Planner'))) {
+        return res.status(403).json({
+          success: false,
+          message: 'Technicians cannot switch to supervisor or planner roles'
+        });
+      }
+
+      // Supervisors cannot become planners or technicians
+      if (user.mainRole === 'supervisor' && 
+          (role.includes('Planner') || role.includes('Technician'))) {
+        return res.status(403).json({
+          success: false,
+          message: 'Supervisors cannot switch to planner or technician roles'
+        });
+      }
+
+      // Planners cannot switch to any other role
+      if (user.mainRole === 'planner') {
+        return res.status(403).json({
+          success: false,
+          message: 'Planners cannot switch roles'
+        });
+      }
+    }
+
+    // Switch role/department
+    const updatedUser = await User.switchRole(user.id, role, { department });
 
     if (!updatedUser) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role or user does not have permission for this role'
+        message: 'Failed to switch role or department'
       });
     }
 
-    // Generate new token with updated role
+    // Generate new token with updated role/department
     const newToken = jwt.sign(
       {
         uid: updatedUser.uid || updatedUser.id,
         email: updatedUser.email,
+        mainRole: updatedUser.mainRole,
         currentRole: updatedUser.currentRole,
-        department: updatedUser.department
+        department: updatedUser.activeDepartment || updatedUser.department,
+        activeDepartment: updatedUser.activeDepartment
       },
       process.env.JWT_SECRET || 'your-secret-key-change-in-production',
       { expiresIn: '7d' }
@@ -116,15 +178,19 @@ router.post('/switch-role', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Role switched successfully',
+      message: department ? 'Department switched successfully' : 'Role switched successfully',
       token: newToken,
       user: {
         uid: updatedUser.uid || updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
+        mainRole: updatedUser.mainRole,
         currentRole: updatedUser.currentRole,
         allowedRoles: updatedUser.allowedRoles,
-        department: updatedUser.department
+        department: updatedUser.activeDepartment || updatedUser.department,
+        departments: updatedUser.departments,
+        activeDepartment: updatedUser.activeDepartment,
+        permissions: updatedUser.permissions
       }
     });
   } catch (error) {
@@ -173,14 +239,18 @@ router.get('/me', async (req, res) => {
     res.json({
       success: true,
       user: {
-        uid: user.uid,
+        uid: user.uid || user.id,
         name: user.name,
         email: user.email,
         employeeId: user.employeeId,
+        mainRole: user.mainRole,
         currentRole: user.currentRole,
         allowedRoles: user.allowedRoles,
-        department: user.department,
-        phoneNumber: user.phoneNumber
+        department: user.activeDepartment || user.department,
+        departments: user.departments,
+        activeDepartment: user.activeDepartment,
+        phoneNumber: user.phoneNumber,
+        permissions: user.permissions
       }
     });
   } catch (error) {
