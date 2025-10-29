@@ -6,8 +6,8 @@ dotenv.config();
 
 /**
  * Configure role switching for technicians and supervisors
- * - Mike Davis: Only technician with ALL 3 departments
- * - Other technicians: 1 department each, can switch roles
+ * - ALL TECHNICIANS: Can access ALL 3 departments (Production, Testing, Quality)
+ * - ALL TECHNICIANS: Can switch roles (technician, supervisor, planner)
  * - Supervisors: Can switch roles
  */
 
@@ -35,14 +35,14 @@ async function configureRoleSwitching() {
       let updateData = {};
 
       // ========================================
-      // MIKE DAVIS - Special case: All 3 departments
+      // ALL TECHNICIANS - All 3 departments, can switch roles
       // ========================================
-      if (userData.email === 'mike.davis@company.com') {
+      if (userData.currentRole && userData.currentRole.includes('Technician')) {
         updateData = {
           mainRole: 'technician',
-          departments: ['Production', 'Testing', 'Quality'],
-          activeDepartment: 'Production',
-          department: 'Production',
+          departments: ['Production', 'Testing', 'Quality'], // ALL 3 departments
+          activeDepartment: userData.department || 'Production',
+          department: userData.department || 'Production',
           allowedRoles: ['technician', 'supervisor', 'planner'], // Can switch to ANY role
           permissions: {
             canApprove: false,
@@ -51,28 +51,7 @@ async function configureRoleSwitching() {
             canCreateJobOrders: false
           }
         };
-        console.log(`✅ Mike Davis - ALL 3 DEPARTMENTS (can switch to any role)`);
-      }
-      
-      // ========================================
-      // OTHER TECHNICIANS - 1 department each, can switch ANY role
-      // ========================================
-      else if (userData.currentRole && userData.currentRole.includes('Technician')) {
-        const dept = userData.department || 'Production';
-        updateData = {
-          mainRole: 'technician',
-          departments: [dept], // Only 1 department
-          activeDepartment: dept,
-          department: dept,
-          allowedRoles: ['technician', 'supervisor', 'planner'], // Can switch to ANY role
-          permissions: {
-            canApprove: false,
-            canAssign: false,
-            canViewReports: false,
-            canCreateJobOrders: false
-          }
-        };
-        console.log(`✅ ${userData.name} - ${dept} only (can switch to any role)`);
+        console.log(`✅ ${userData.name} - ALL 3 DEPARTMENTS (Production, Testing, Quality) + can switch roles`);
       }
       
       // ========================================
@@ -109,13 +88,15 @@ async function configureRoleSwitching() {
     console.log(`✅ Successfully updated: ${updated} users\n`);
 
     console.log('📋 Configuration Summary:');
-    console.log('   • Mike Davis: 3 departments (Production + Testing + Quality) - Can switch roles');
-    console.log('   • Other Technicians: 1 department each - Can switch to ANY role');
+    console.log('   • ALL Technicians: 3 departments (Production + Testing + Quality) - Can switch roles & departments');
     console.log('   • Supervisors: 1 department each - Can switch to ANY role');
     console.log('   • Planners: No role switching (admin level)\n');
 
-    console.log('🔄 All technicians and supervisors can switch roles: technician ↔ supervisor ↔ planner');
-    console.log('📱 Use: POST /api/auth/switch-role with {"role": "technician|supervisor|planner"}\n');
+    console.log('🔄 All technicians can switch:');
+    console.log('   - Roles: technician ↔ supervisor ↔ planner');
+    console.log('   - Departments: Production ↔ Testing ↔ Quality');
+    console.log('📱 Switch role: POST /api/auth/switch-role with {"role": "technician|supervisor|planner"}');
+    console.log('📱 Switch dept: POST /api/auth/switch-role with {"department": "Production|Testing|Quality"}\n');
 
     process.exit(0);
   } catch (error) {

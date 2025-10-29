@@ -1,10 +1,28 @@
 import { admin, initializeFirebase } from '../config/firebase.js';
 
-// Initialize Firebase
-initializeFirebase();
+// Initialize Firebase with error handling
+let db = null;
+let isFirebaseAvailable = false;
 
-// Get Firestore instance
-const db = admin.firestore();
+try {
+  initializeFirebase();
+  db = admin.firestore();
+  isFirebaseAvailable = true;
+} catch (error) {
+  console.warn('⚠️  Firestore not available - Firebase initialization failed');
+  console.warn('   Some features will be limited');
+  // Create a mock db object to prevent crashes
+  db = {
+    collection: () => ({
+      doc: () => ({}),
+      add: () => Promise.reject(new Error('Firebase not configured')),
+      get: () => Promise.reject(new Error('Firebase not configured')),
+      where: () => ({
+        get: () => Promise.reject(new Error('Firebase not configured'))
+      })
+    })
+  };
+}
 
 // Collection references
 export const collections = {
@@ -108,5 +126,5 @@ export const firestoreHelpers = {
 };
 
 // Export Firestore instance
-export { db };
+export { db, isFirebaseAvailable };
 export default db;

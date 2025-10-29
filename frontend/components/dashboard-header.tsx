@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { DepartmentSwitcher } from "@/components/department-switcher"
 
 const roleConfig: Record<
   UserRole,
@@ -132,6 +133,7 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <DepartmentSwitcher />
           <NotificationDropdown />
           <ThemeToggle />
           <DropdownMenu>

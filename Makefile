@@ -51,6 +51,14 @@ frontend: ## 🎨 Start frontend only (port 3000)
 
 start: clean-ports ## 🚀 Start both backend & frontend
 	@mkdir -p logs
+	@if [ ! -d "backend/node_modules" ]; then \
+		echo "$(YELLOW)📦 Backend dependencies missing, installing...$(NC)"; \
+		cd backend && npm install --silent; \
+	fi
+	@if [ ! -d "frontend/node_modules" ]; then \
+		echo "$(YELLOW)📦 Frontend dependencies missing, installing...$(NC)"; \
+		cd frontend && npm install --silent; \
+	fi
 	@echo "$(YELLOW)🔧 Starting backend (port 5000)...$(NC)"
 	@cd backend && node server.js > $(CURDIR)/logs/backend.log 2>&1 & echo $$! > $(CURDIR)/logs/backend.pid
 	@sleep 3

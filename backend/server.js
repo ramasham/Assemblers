@@ -21,9 +21,15 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Initialize Firebase and Firestore
-initializeFirebase();
-console.log('✅ Firebase and Firestore initialized');
+// Initialize Firebase and Firestore (with error handling)
+try {
+  initializeFirebase();
+  console.log('✅ Firebase and Firestore initialized');
+} catch (error) {
+  console.warn('⚠️  Firebase initialization failed - running in fallback mode');
+  console.warn('   Error:', error.message);
+  console.warn('   You can still use the system but some features may be limited');
+}
 
 // Middleware
 app.use(cors({

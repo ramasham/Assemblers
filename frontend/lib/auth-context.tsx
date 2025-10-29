@@ -19,6 +19,7 @@ export interface User {
   availableRoles: UserRole[]
   currentRole: UserRole | null
   department?: Department
+  departments?: Department[] // All available departments for switching
 }
 
 interface AuthContextType {
@@ -27,6 +28,7 @@ interface AuthContextType {
   logout: () => void
   selectRole: (role: UserRole) => void
   switchRole: (role: UserRole) => void
+  switchDepartment: (department: Department) => Promise<void>
   isLoading: boolean
 }
 
@@ -73,6 +75,16 @@ function mapBackendDepartment(dept: string): Department | undefined {
   return deptMap[dept]
 }
 
+// Map frontend department to backend department
+function mapFrontendDepartment(dept: Department): string {
+  const deptMap: Record<Department, string> = {
+    'production': 'Production',
+    'test': 'Testing',
+    'quality': 'Quality',
+  }
+  return deptMap[dept]
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -107,11 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Map backend user data to frontend format
       const mappedRoles = data.user.allowedRoles
-        .map(mapBackendRole)
-        .filter((role): role is UserRole => role !== null)
+        .map((r: string) => mapBackendRole(r))
+        .filter((role: UserRole | null): role is UserRole => role !== null)
       
       const mappedCurrentRole = mapBackendRole(data.user.currentRole)
       const mappedDepartment = mapBackendDepartment(data.user.department)
+      const mappedDepartments = data.user.departments
+        ?.map(mapBackendDepartment)
+        .filter((dept: Department | undefined): dept is Department => dept !== undefined) || []
 
       const user: User = {
         id: data.user.uid,
@@ -120,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         availableRoles: mappedRoles,
         currentRole: mappedCurrentRole,
         department: mappedDepartment,
+        departments: mappedDepartments,
       }
 
       setUser(user)
@@ -186,6 +202,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const switchDepartment = async (department: Department) => {
+    if (user && user.departments?.includes(department)) {
+      try {
+        const token = localStorage.getItem("token")
+        const backendDept = mapFrontendDepartment(department)
+        
+        // Call backend to switch department
+        const response = await fetch(`${API_URL}/api/auth/switch-role`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ department: backendDept }),
+        })
+
+        if (response.ok) {
+          const updatedUser = { ...user, department }
+          setUser(updatedUser)
+          localStorage.setItem("user", JSON.stringify(updatedUser))
+        }
+      } catch (error) {
+        console.error('Error switching department:', error)
+      }
+    }
+  }
+
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
@@ -193,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, selectRole, switchRole, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, selectRole, switchRole, switchDepartment, isLoading }}>
       {children}
     </AuthContext.Provider>
   )
