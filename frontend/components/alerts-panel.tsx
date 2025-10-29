@@ -6,10 +6,27 @@ import { Button } from "@/components/ui/button"
 import { mockAlerts, type Alert } from "@/lib/mock-data"
 import { AlertCircle, AlertTriangle, Info, CheckCircle, X } from "lucide-react"
 import { useState } from "react"
-import { cn } from "@/lib/utils" // Assuming cn is imported from a utility file
+import { cn } from "@/lib/utils"
+import { useAuth, type UserRole } from "@/lib/auth-context"
 
 export function AlertsPanel() {
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts)
+  const { user } = useAuth()
+
+  const getFilteredAlerts = () => {
+    if (!user?.currentRole) return []
+
+    const department = getDepartmentFromRole(user.currentRole)
+    const destination = getDestinationFromRole(user.currentRole)
+
+    return mockAlerts.filter((alert) => {
+      const departmentMatch = !alert.department || alert.department === department
+      const destinationMatch = !alert.destination || alert.destination === destination
+
+      return departmentMatch && destinationMatch
+    })
+  }
+
+  const [alerts, setAlerts] = useState<Alert[]>(getFilteredAlerts())
 
   const dismissAlert = (alertId: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== alertId))
@@ -42,6 +59,19 @@ export function AlertsPanel() {
   }
 
   const unreadCount = alerts.filter((alert) => !alert.read).length
+
+  const getDepartmentFromRole = (role: UserRole) => {
+    if (role === "production-supervisor" || role === "production-worker") return "production"
+    if (role === "test-supervisor" || role === "tester") return "test"
+    if (role === "quality-supervisor" || role === "quality") return "quality"
+    return null
+  }
+
+  const getDestinationFromRole = (role: UserRole) => {
+    if (role === "engineer-planner") return "planner"
+    if (role.includes("supervisor")) return "supervisor"
+    return "technician"
+  }
 
   return (
     <Card>

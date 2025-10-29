@@ -1,36 +1,45 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { WorkSubmissionForm } from "@/components/work-submission-form"
-import { SubmissionHistory } from "@/components/submission-history"
-import { QuickStatsSummary } from "@/components/quick-stats-summary"
+import { DailyTaskForm } from "@/components/daily-task-form"
+import { Card } from "@/components/ui/card"
+import { Calendar } from "lucide-react"
 
 export default function SubmitWorkPage() {
   const { user } = useAuth()
 
   if (!user) return null
 
-  // Mock weekly stats
-  const weeklyStats = {
-    weeklyUnits: 45,
-    weeklyHours: 40,
-    avgProductivity: 4.5,
-    weeklyTarget: 50,
-  }
+  const currentDate = new Date()
+  const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" })
+  const formattedDate = currentDate.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
 
   return (
     <div className="space-y-6">
+      <Card className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border-primary/20">
+        <div className="p-6">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">{dayName}</h2>
+              <p className="text-muted-foreground">{formattedDate}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Work Submission</h2>
-        <p className="text-muted-foreground">Log your daily work and track your progress</p>
+        <h2 className="text-3xl font-bold tracking-tight">Daily Task Submission</h2>
+        <p className="text-muted-foreground">Log your assembly operations for today</p>
       </div>
 
-      <QuickStatsSummary {...weeklyStats} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <WorkSubmissionForm />
-        <SubmissionHistory />
-      </div>
+      <DailyTaskForm />
     </div>
   )
 }

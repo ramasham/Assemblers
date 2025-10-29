@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { mockJobOrders, type JobOrder } from "@/lib/mock-data"
 import { Calendar } from "lucide-react"
 
@@ -60,8 +59,6 @@ export function ActiveJobOrders({ userName }: ActiveJobOrdersProps) {
                     <p className="text-[10px] text-muted-foreground">Complete</p>
                   </div>
                 </div>
-
-                <Progress value={progress} className="h-1.5 mb-2" />
 
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1 text-muted-foreground">

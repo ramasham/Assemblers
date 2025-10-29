@@ -8,10 +8,20 @@ const db = admin.firestore();
 
 // Collection references
 export const collections = {
+  // Original collections
   technicians: db.collection('technicians'),
   jobOrders: db.collection('jobOrders'),
   tasks: db.collection('tasks'),
-  alerts: db.collection('alerts')
+  alerts: db.collection('alerts'),
+  
+  // New collections for comprehensive database schema
+  users: db.collection('users'),
+  roles: db.collection('roles'),
+  userAllowedRoles: db.collection('userAllowedRoles'),
+  devices: db.collection('devices'),
+  performanceMetrics: db.collection('performanceMetrics'),
+  auditLogs: db.collection('auditLogs'),
+  sessions: db.collection('sessions')
 };
 
 // Helper functions for common operations

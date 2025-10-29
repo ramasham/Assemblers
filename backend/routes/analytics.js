@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.firebase.js';
 import Task from '../models/Task.js';
 import JobOrder from '../models/JobOrder.js';
 import Technician from '../models/Technician.js';
@@ -360,6 +360,122 @@ router.get('/my-performance', authenticate, async (req, res) => {
       }
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get real performance metrics based on completed work
+router.get('/performance', authenticate, async (req, res) => {
+  try {
+    const { period = '7days', technicianId } = req.query;
+    
+    // Calculate date range
+    let startDate;
+    const endDate = new Date();
+    
+    switch (period) {
+      case 'today':
+        startDate = startOfDay(endDate);
+        break;
+      case '7days':
+        startDate = subDays(endDate, 7);
+        break;
+      case '30days':
+        startDate = subDays(endDate, 30);
+        break;
+      default:
+        startDate = subDays(endDate, 7);
+    }
+    
+    // Query completed work
+    const { db } = await import('../services/firestore.js');
+    let query = db.collection('completedWork')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate);
+    
+    if (technicianId) {
+      query = query.where('technicianId', '==', technicianId);
+    }
+    
+    const snapshot = await query.get();
+    const completedWork = [];
+    snapshot.forEach(doc => {
+      completedWork.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    // Group by technician and calculate metrics
+    const technicianMetrics = {};
+    
+    for (const work of completedWork) {
+      const techId = work.technicianId;
+      
+      if (!technicianMetrics[techId]) {
+        technicianMetrics[techId] = {
+          technicianId: techId,
+          technicianName: work.technicianName,
+          devicesCompleted: 0,
+          totalWorkHours: 0,
+          totalStandardTime: 0,
+          totalActualTime: 0,
+          efficiencySum: 0,
+          productivitySum: 0,
+          utilizationSum: 0,
+          workDays: new Set(),
+          entries: 0
+        };
+      }
+      
+      const metrics = technicianMetrics[techId];
+      metrics.devicesCompleted += work.devicesCompleted || 0;
+      metrics.totalWorkHours += work.workHours || 0;
+      metrics.totalStandardTime += work.totalStandardTime || 0;
+      metrics.totalActualTime += work.totalActualTime || 0;
+      metrics.efficiencySum += work.efficiency || 0;
+      metrics.productivitySum += work.productivity || 0;
+      metrics.utilizationSum += work.utilization || 0;
+      metrics.workDays.add(work.dateString);
+      metrics.entries++;
+    }
+    
+    // Calculate averages and format result
+    const performanceMetrics = Object.values(technicianMetrics).map(metrics => {
+      const avgEfficiency = metrics.efficiencySum / metrics.entries;
+      const avgProductivity = metrics.productivitySum / metrics.entries;
+      const avgUtilization = metrics.utilizationSum / metrics.entries;
+      
+      return {
+        technicianId: metrics.technicianId,
+        technicianName: metrics.technicianName,
+        completedUnits: metrics.devicesCompleted,
+        workHours: Math.round(metrics.totalWorkHours * 100) / 100,
+        efficiency: Math.round(avgEfficiency * 100) / 100,
+        productivity: Math.round(avgProductivity * 100) / 100,
+        utilization: Math.round(avgUtilization * 100) / 100,
+        workDays: metrics.workDays.size,
+        totalEntries: metrics.entries,
+        date: endDate.toISOString().split('T')[0]
+      };
+    });
+    
+    // Sort by efficiency (best performers first)
+    performanceMetrics.sort((a, b) => b.efficiency - a.efficiency);
+    
+    res.json({
+      success: true,
+      period,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      count: performanceMetrics.length,
+      metrics: performanceMetrics
+    });
+  } catch (error) {
+    console.error('Error fetching performance metrics:', error);
     res.status(500).json({
       success: false,
       message: error.message

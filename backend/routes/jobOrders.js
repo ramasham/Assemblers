@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, isPlanner, isSupervisor, isPlannerOrSupervisor } from '../middleware/auth.firebase.js';
 import JobOrder from '../models/JobOrder.js';
 import Alert from '../models/Alert.js';
 
@@ -10,35 +10,28 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { status, priority, search, assignedTo } = req.query;
     
-    let query = {};
+    let filters = {};
     
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (assignedTo) query.assignedTechnicians = assignedTo;
+    if (status) filters.status = status;
+    if (priority) filters.priority = priority;
     
-    if (search) {
-      query.$or = [
-        { jobOrderNumber: { $regex: search, $options: 'i' } },
-        { productName: { $regex: search, $options: 'i' } },
-        { productCode: { $regex: search, $options: 'i' } }
-      ];
+    // Technicians only see their assigned jobs
+    const technicianRoles = ['Production Technician', 'Testing Technician', 'Quality Technician'];
+    if (technicianRoles.includes(req.user.currentRole)) {
+      filters.assignedTechnicianId = req.user.id;
+    } else if (assignedTo) {
+      filters.assignedTechnicianId = assignedTo;
     }
 
-    // Employees only see their assigned jobs
-    if (['production', 'quality', 'testing'].includes(req.user.role)) {
-      query.assignedTechnicians = req.user.id;
-    }
-
-    const jobOrders = await JobOrder.find(query)
-      .populate('assignedTechnicians', 'employeeId name email')
-      .sort({ dueDate: 1, priority: -1 });
+    const jobOrders = await JobOrder.findAll(filters);
 
     res.json({
       success: true,
       count: jobOrders.length,
-      data: jobOrders
+      jobOrders: jobOrders
     });
   } catch (error) {
+    console.error('Job orders error:', error);
     res.status(500).json({
       success: false,
       message: error.message

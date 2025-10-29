@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Factory, FlaskConical, CheckCircle2, ClipboardList, Calendar } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 
 const roleConfig: Record<
   UserRole,
@@ -16,6 +17,7 @@ const roleConfig: Record<
     color: string
     bgColor: string
     description: string
+    badge?: string
   }
 > = {
   "production-worker": {
@@ -39,12 +41,29 @@ const roleConfig: Record<
     bgColor: "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20",
     description: "Quality assurance and inspection",
   },
-  supervisor: {
-    label: "Supervisor",
+  "production-supervisor": {
+    label: "Production Supervisor",
     icon: ClipboardList,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/20",
-    description: "Team oversight and task approval",
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20",
+    description: "Oversee production department tasks",
+    badge: "Production",
+  },
+  "test-supervisor": {
+    label: "Test Supervisor",
+    icon: ClipboardList,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20",
+    description: "Oversee testing department tasks",
+    badge: "Test",
+  },
+  "quality-supervisor": {
+    label: "Quality Supervisor",
+    icon: ClipboardList,
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20",
+    description: "Oversee quality department tasks",
+    badge: "Quality",
   },
   "engineer-planner": {
     label: "Engineer Planner",
@@ -93,7 +112,14 @@ export function RoleSelection() {
                       <Icon className="h-8 w-8" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{config.label}</h3>
+                      <div className="flex items-center justify-center gap-2">
+                        <h3 className="font-semibold text-lg">{config.label}</h3>
+                        {config.badge && (
+                          <Badge variant="secondary" className="text-xs">
+                            {config.badge}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">{config.description}</p>
                     </div>
                   </div>

@@ -3,10 +3,24 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { mockPerformanceMetrics } from "@/lib/mock-data"
+import { fetchPerformanceMetrics, type PerformanceMetric } from "@/lib/api"
+import { useEffect, useState } from "react"
 
 export function TeamPerformanceChart() {
-  const chartData = mockPerformanceMetrics.map((metric) => ({
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadMetrics() {
+      setLoading(true)
+      const data = await fetchPerformanceMetrics()
+      setMetrics(data)
+      setLoading(false)
+    }
+    loadMetrics()
+  }, [])
+
+  const chartData = metrics.map((metric) => ({
     name: metric.technicianName.split(" ")[0],
     productivity: metric.productivity,
     efficiency: metric.efficiency,
@@ -26,6 +40,41 @@ export function TeamPerformanceChart() {
       label: "Utilization (%)",
       color: "hsl(var(--chart-3))",
     },
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Performance Overview</CardTitle>
+          <CardDescription>Productivity, efficiency, and utilization metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+              <p className="text-sm text-muted-foreground">Loading performance data...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (metrics.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Performance Overview</CardTitle>
+          <CardDescription>Productivity, efficiency, and utilization metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground">No performance data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

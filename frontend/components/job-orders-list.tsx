@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { mockJobOrders, type JobOrder } from "@/lib/mock-data"
 import { Calendar, Hash } from "lucide-react"
 
@@ -73,10 +72,9 @@ export function JobOrdersList({ assignedTo, limit }: JobOrdersListProps) {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Progress</span>
                     <span className="font-medium">
-                      {order.completed} / {order.quantity} units
+                      {order.completed} / {order.quantity} units ({Math.round(progress)}%)
                     </span>
                   </div>
-                  <Progress value={progress} className="h-2" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">

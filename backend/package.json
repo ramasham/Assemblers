@@ -7,6 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "init-db": "node scripts/initializeDatabase.js",
+    "seed": "node scripts/seedDatabase.js",
+    "create-users": "node scripts/createUsersWithFirebase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["task-management", "technician", "job-tracking"],

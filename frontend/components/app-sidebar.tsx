@@ -8,14 +8,13 @@ import {
   Home,
   Calendar,
   ClipboardList,
-  CheckSquare,
-  Users,
   ClipboardCheck,
-  AlertTriangle,
   FolderKanban,
   BarChart3,
   FileText,
   Settings,
+  Clipboard,
+  History,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -41,35 +40,34 @@ const navItems: NavItem[] = [
   },
   // Technicians (production-worker, tester, quality)
   {
+    title: "My Tasks",
+    href: "/technician-tasks",
+    icon: Clipboard,
+    roles: ["production-worker", "tester", "quality"],
+  },
+  {
     title: "Daily Task Input",
     href: "/submit-work",
     icon: ClipboardList,
     roles: ["production-worker", "tester", "quality"],
   },
   {
-    title: "To-do List",
-    href: "/todo",
-    icon: CheckSquare,
+    title: "Submission History",
+    href: "/submission-history",
+    icon: History,
     roles: ["production-worker", "tester", "quality"],
   },
-  // Supervisor
   {
-    title: "Team Overview",
-    href: "/team-overview",
-    icon: Users,
-    roles: ["supervisor"],
+    title: "Operations",
+    href: "/supervisor/operations",
+    icon: ClipboardList,
+    roles: ["production-supervisor", "test-supervisor", "quality-supervisor"],
   },
   {
-    title: "Task Approval",
-    href: "/task-approval",
+    title: "Task Review",
+    href: "/supervisor/task-review",
     icon: ClipboardCheck,
-    roles: ["supervisor"],
-  },
-  {
-    title: "Alerts",
-    href: "/alerts",
-    icon: AlertTriangle,
-    roles: ["supervisor"],
+    roles: ["production-supervisor", "test-supervisor", "quality-supervisor"],
   },
   // Planner
   {
@@ -98,7 +96,7 @@ export function AppSidebar() {
 
   const filteredNavItems = navItems.filter((item) => {
     if (!item.roles) return true
-    return user && item.roles.includes(user.role)
+    return user && user.currentRole && item.roles.includes(user.currentRole)
   })
 
   return (
@@ -110,12 +108,12 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 py-4 overflow-y-auto">
+        <nav className="flex-1 py-4 overflow-y-auto flex flex-col items-center">
           <TooltipProvider delayDuration={0}>
             <div className="space-y-2">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
 
                 return (
                   <Tooltip key={item.href}>
@@ -150,7 +148,7 @@ export function AppSidebar() {
           </TooltipProvider>
         </nav>
 
-        <div className="border-t border-border/50 py-4">
+        <div className="border-t border-border/50 py-4 flex items-center justify-center">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>

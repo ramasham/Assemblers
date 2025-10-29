@@ -6,12 +6,14 @@ import { db } from './services/firestore.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Import routes
-import authRoutes from './routes/auth.js';
+import authRoutes from './routes/auth.firebase.js';
+import usersRoutes from './routes/users.js';
 import technicianRoutes from './routes/technicians.js';
 import jobOrderRoutes from './routes/jobOrders.js';
-import taskRoutes from './routes/tasks.js';
+import taskRoutes from './routes/tasks.firebase.js';
 import alertRoutes from './routes/alerts.js';
 import analyticsRoutes from './routes/analytics.js';
+import operationsRoutes from './routes/operations.js';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +28,8 @@ console.log('✅ Firebase and Firestore initialized');
 // Middleware
 app.use(cors({
   origin: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:5174',
@@ -55,11 +59,13 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/technicians', technicianRoutes);
 app.use('/api/job-orders', jobOrderRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/operations', operationsRoutes);
 
 // Root endpoint
 // Basic route
@@ -101,7 +107,7 @@ app.listen(PORT, () => {
 ║   🚀 Technician Task Management System - Backend API          ║
 ║                                                               ║
 ║   Server running on: http://localhost:${PORT}                 ║
-║   Environment: ${process.env.NODE_ENV || 'development'}       ║                       ║
+║   Environment: ${process.env.NODE_ENV || 'development'}       ║
 ║   Database: Firebase Firestore                                ║
 ║   Auth: Firebase Authentication                               ║
 ║                                                               ║

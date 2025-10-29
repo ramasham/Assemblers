@@ -14,9 +14,41 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { mockNotifications, type Notification } from "@/lib/mock-data"
+import { useAuth, type UserRole } from "@/lib/auth-context"
+
+const getDepartmentFromRole = (role: UserRole) => {
+  if (role === "production-supervisor" || role === "production-worker") return "production"
+  if (role === "test-supervisor" || role === "tester") return "test"
+  if (role === "quality-supervisor" || role === "quality") return "quality"
+  return null
+}
+
+const getDestinationFromRole = (role: UserRole) => {
+  if (role === "engineer-planner") return "planner"
+  if (role.includes("supervisor")) return "supervisor"
+  return "technician"
+}
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const { user } = useAuth()
+
+  const getFilteredNotifications = () => {
+    if (!user?.currentRole) return []
+
+    const department = getDepartmentFromRole(user.currentRole)
+    const destination = getDestinationFromRole(user.currentRole)
+
+    return mockNotifications.filter((notification) => {
+      // Show notifications that match user's department OR have no department (global)
+      const departmentMatch = !notification.department || notification.department === department
+      // Show notifications that match user's destination OR have no destination (global)
+      const destinationMatch = !notification.destination || notification.destination === destination
+
+      return departmentMatch && destinationMatch
+    })
+  }
+
+  const [notifications, setNotifications] = useState<Notification[]>(getFilteredNotifications())
   const [open, setOpen] = useState(false)
 
   const unreadCount = notifications.filter((n) => !n.read).length

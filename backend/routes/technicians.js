@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.firebase.js';
 import Technician from '../models/Technician.js';
 
 const router = express.Router();

@@ -1,15 +1,39 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react"
 import { mockJobOrders, mockPerformanceMetrics } from "@/lib/mock-data"
+import { useAuth, type Department } from "@/lib/auth-context"
 
 export function SupervisorStats() {
-  const totalTechnicians = mockPerformanceMetrics.length
-  const totalJobOrders = mockJobOrders.length
-  const delayedOrders = mockJobOrders.filter((order) => order.status === "delayed").length
-  const completedOrders = mockJobOrders.filter((order) => order.status === "completed").length
+  const { user } = useAuth()
+
+  const getDepartmentFromRole = (role: string | null): Department | null => {
+    if (role === "production-supervisor") return "production"
+    if (role === "test-supervisor") return "test"
+    if (role === "quality-supervisor") return "quality"
+    return null
+  }
+
+  const department = getDepartmentFromRole(user?.currentRole || null)
+
+  const departmentJobOrders = department
+    ? mockJobOrders.filter((order) => order.department === department)
+    : mockJobOrders
+
+  const departmentMetrics = department
+    ? mockPerformanceMetrics.filter((metric) => metric.department === department)
+    : mockPerformanceMetrics
+
+  const totalTechnicians = departmentMetrics.length
+  const totalJobOrders = departmentJobOrders.length
+  const delayedOrders = departmentJobOrders.filter((order) => order.status === "delayed").length
+  const completedOrders = departmentJobOrders.filter((order) => order.status === "completed").length
 
   const avgEfficiency =
-    mockPerformanceMetrics.reduce((sum, metric) => sum + metric.efficiency, 0) / mockPerformanceMetrics.length
+    departmentMetrics.length > 0
+      ? departmentMetrics.reduce((sum, metric) => sum + metric.efficiency, 0) / departmentMetrics.length
+      : 0
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

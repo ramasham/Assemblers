@@ -28,7 +28,15 @@ export function LoginForm() {
     try {
       const success = await login(email, password)
       if (success) {
-        router.push("/select-role")
+        const storedUser = localStorage.getItem("user")
+        if (storedUser) {
+          const user = JSON.parse(storedUser)
+          if (user.currentRole) {
+            router.push("/dashboard")
+          } else {
+            router.push("/select-role")
+          }
+        }
       } else {
         setError("Invalid credentials. Please try again.")
       }

@@ -1,20 +1,29 @@
 "use client"
 
 import { useState } from "react"
-import { FolderKanban, Plus, Search } from "lucide-react"
+import { FolderKanban, Plus, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { AllJobOrders } from "@/components/all-job-orders"
+import { CreateJobOrderDialog } from "@/components/create-job-order-dialog"
 import { mockJobOrders } from "@/lib/mock-data"
 
-export default function JobOrdersPage() {
-  const [searchQuery, setSearchQuery] = useState("")
+type StatusFilter = "all" | "in-progress" | "completed" | "delayed" | "pending"
 
-  const totalOrders = mockJobOrders.length
-  const activeOrders = mockJobOrders.filter((jo) => jo.status === "in-progress").length
-  const completedOrders = mockJobOrders.filter((jo) => jo.status === "completed").length
-  const delayedOrders = mockJobOrders.filter((jo) => jo.status === "delayed").length
+export default function JobOrdersPage() {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [activeStatus, setActiveStatus] = useState<StatusFilter>("all")
+  const [jobOrders, setJobOrders] = useState(mockJobOrders)
+
+  const totalOrders = jobOrders.length
+  const activeOrders = jobOrders.filter((jo) => jo.status === "in-progress").length
+  const completedOrders = jobOrders.filter((jo) => jo.status === "completed").length
+  const delayedOrders = jobOrders.filter((jo) => jo.status === "delayed").length
+  const pendingOrders = jobOrders.filter((jo) => jo.status === "pending").length
+
+  const handleJobOrderCreated = (newJobOrder: any) => {
+    setJobOrders([newJobOrder, ...jobOrders])
+  }
 
   return (
     <div className="space-y-6">
@@ -23,14 +32,14 @@ export default function JobOrdersPage() {
           <h2 className="text-3xl font-bold tracking-tight">Job Order Management</h2>
           <p className="text-muted-foreground">Track and manage all production job orders</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Job Order
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setActiveStatus("all")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
             <FolderKanban className="h-4 w-4 text-muted-foreground" />
@@ -41,7 +50,7 @@ export default function JobOrdersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setActiveStatus("in-progress")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active</CardTitle>
             <FolderKanban className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -52,7 +61,7 @@ export default function JobOrdersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setActiveStatus("completed")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
             <FolderKanban className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -63,31 +72,36 @@ export default function JobOrdersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setActiveStatus("delayed")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Delayed</CardTitle>
-            <FolderKanban className="h-4 w-4 text-[#FF4D8D]" />
+            <FolderKanban className="h-4 w-4 text-red-600 dark:text-red-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#FF4D8D]">{delayedOrders}</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{delayedOrders}</div>
             <p className="text-xs text-muted-foreground">Behind schedule</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setActiveStatus("pending")}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{pendingOrders}</div>
+            <p className="text-xs text-muted-foreground">Awaiting start</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by job number, device type, or serial number..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      <AllJobOrders statusFilter={activeStatus} jobOrders={jobOrders} />
 
-      <AllJobOrders searchQuery={searchQuery} />
+      <CreateJobOrderDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onJobOrderCreated={handleJobOrderCreated}
+      />
     </div>
   )
 }

@@ -5,8 +5,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { mockPerformanceMetrics, mockJobOrders } from "@/lib/mock-data"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react"
 
 export default function ReportsPage() {
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
+  const [reportTitle, setReportTitle] = useState("")
+  const [recipient, setRecipient] = useState("")
+  const [message, setMessage] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const recipients = [
+    { id: "1", name: "Mike Davis", role: "Production Technician" },
+    { id: "2", name: "Emily Chen", role: "Test Technician" },
+    { id: "3", name: "David Lee", role: "Quality Inspector" },
+    { id: "4", name: "Sarah Martinez", role: "Production Technician" },
+    { id: "5", name: "James Wilson", role: "Test Technician" },
+    { id: "6", name: "Lisa Anderson", role: "Quality Inspector" },
+    { id: "7", name: "Sarah Johnson", role: "Production Manager" },
+    { id: "8", name: "John Smith", role: "Department Head" },
+  ]
+
   const totalUnits = mockPerformanceMetrics.reduce((sum, m) => sum + m.completedUnits, 0)
   const totalHours = mockPerformanceMetrics.reduce((sum, m) => sum + m.workHours, 0)
   const avgProductivity = totalUnits / totalHours
@@ -43,6 +72,19 @@ export default function ReportsPage() {
     },
   ]
 
+  const handleGenerateReport = () => {
+    setIsGenerating(true)
+    // Simulate report generation
+    setTimeout(() => {
+      console.log("[v0] Generating report:", { reportTitle, recipient, message })
+      setIsGenerating(false)
+      setIsGenerateDialogOpen(false)
+      setReportTitle("")
+      setRecipient("")
+      setMessage("")
+    }, 1500)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -50,11 +92,64 @@ export default function ReportsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
           <p className="text-muted-foreground">Generate and export production reports</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsGenerateDialogOpen(true)}>
           <FileText className="h-4 w-4 mr-2" />
           Generate Report
         </Button>
       </div>
+
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Generate New Report</DialogTitle>
+            <DialogDescription>Create a custom report based on your production data</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="report-title">Report Title</Label>
+              <Input
+                id="report-title"
+                placeholder="Enter report title"
+                value={reportTitle}
+                onChange={(e) => setReportTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Send To</Label>
+              <Select value={recipient} onValueChange={setRecipient}>
+                <SelectTrigger id="recipient">
+                  <SelectValue placeholder="Select recipient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipients.map((person) => (
+                    <SelectItem key={person.id} value={person.id}>
+                      {person.name} - {person.role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Add a message to include with the report..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={isGenerating}>
+              Cancel
+            </Button>
+            <Button onClick={handleGenerateReport} disabled={!reportTitle || !recipient || isGenerating}>
+              {isGenerating ? "Generating..." : "Generate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

@@ -42,10 +42,20 @@ const roleConfig: Record<
     icon: CheckCircle2,
     color: "text-purple-500",
   },
-  supervisor: {
-    label: "Supervisor",
+  "production-supervisor": {
+    label: "Production Supervisor",
     icon: ClipboardList,
-    color: "text-orange-500",
+    color: "text-emerald-500",
+  },
+  "test-supervisor": {
+    label: "Test Supervisor",
+    icon: ClipboardList,
+    color: "text-blue-500",
+  },
+  "quality-supervisor": {
+    label: "Quality Supervisor",
+    icon: ClipboardList,
+    color: "text-purple-500",
   },
   "engineer-planner": {
     label: "Engineer Planner",
@@ -65,7 +75,7 @@ export function DashboardHeader() {
 
   const handleRoleSwitch = (role: UserRole) => {
     switchRole(role)
-    router.refresh()
+    router.push("/dashboard")
   }
 
   const getInitials = (name: string) => {

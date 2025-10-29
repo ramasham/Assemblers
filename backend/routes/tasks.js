@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.firebase.js';
 import Task from '../models/Task.js';
 import JobOrder from '../models/JobOrder.js';
 import Technician from '../models/Technician.js';
